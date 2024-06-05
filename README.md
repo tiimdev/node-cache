@@ -1,10 +1,12 @@
-# @tiimdev/node-cache
+![Logo](./logo.png)
+
 [![test](https://github.com/tiimdev/node-cache/actions/workflows/ci.yml/badge.svg)](https://github.com/tiimdev/node-cache/actions/workflows/ci.yml)
 [![license](https://img.shields.io/github/license/tiimdev/node-cache)](https://github.com/tiimdev/node-cache/blob/main/LICENSE)
 [![npm](https://img.shields.io/npm/dm/@tiimdev/node-cache)](https://npmjs.com/package/@tiimdev/node-cache)
 ![npm](https://img.shields.io/npm/v/@tiimdev/node-cache)
 
-# Flexible NodeJS cache module with Keyv
+# @tiimdev/node-cache
+Flexible NodeJS cache module with Keyv
 
 A cache module for nodejs that allows easy wrapping of functions in cache, tiered caches, and a consistent interface.
 
