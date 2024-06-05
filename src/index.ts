@@ -13,6 +13,8 @@ export interface CreateCacheOptions {
 export const createCache = (options: CreateCacheOptions) => {
   const config = { ...options }
 
+  if (!config.stores.length) throw new Error('At least one store is required')
+
   const get = async <T>(key: string) => {
     for (const store of config.stores) {
       try {
@@ -40,7 +42,7 @@ export const createCache = (options: CreateCacheOptions) => {
 
   const wrap = async <T>(
     key: string,
-    fnc: () => Promise<T>,
+    fnc: () => T | Promise<T>,
     ttl?: number | ((value: T) => number),
     refreshThreshold?: number
   ): Promise<T> => {

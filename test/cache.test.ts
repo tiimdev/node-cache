@@ -1,5 +1,7 @@
+import Keyv from 'keyv'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { faker } from '@faker-js/faker'
+import { createCache } from '../src'
 import { cache1, cache2 } from './stores'
 import { sleep } from './sleep'
 
@@ -10,6 +12,12 @@ describe('cache', () => {
   beforeEach(async () => {
     data.key = faker.string.alpha(20)
     data.value = faker.string.sample()
+  })
+
+  describe('init', () => {
+    it('should return error due to stores is empty', async () => {
+      expect(() => createCache({ stores: [] })).toThrowError()
+    })
   })
 
   describe('get() and set()', () => {
@@ -165,16 +173,19 @@ describe('cache', () => {
 
     it('on background refresh error', async () => {
       const onBackgroundRefreshError = vi.fn()
-      cache1.config.onBackgroundRefreshError = onBackgroundRefreshError
+      const cache = createCache({
+        stores: [new Keyv()],
+        onBackgroundRefreshError,
+      })
 
       const refreshThreshold = ttl / 2
-      expect(await cache1.wrap(data.key, async () => 'ok', ttl, refreshThreshold)).toEqual('ok')
+      expect(await cache.wrap(data.key, async () => 'ok', ttl, refreshThreshold)).toEqual('ok')
       expect(onBackgroundRefreshError).not.toHaveBeenCalled()
 
       await sleep(ttl - refreshThreshold)
       const error = new Error('failed')
       expect(
-        await cache1.wrap(
+        await cache.wrap(
           data.key,
           async () => {
             throw error
@@ -183,7 +194,6 @@ describe('cache', () => {
           refreshThreshold
         )
       ).toEqual('ok') // Previous successful value returned
-      await vi.waitUntil(() => onBackgroundRefreshError.mock.calls.length > 0)
       expect(onBackgroundRefreshError).toBeCalledTimes(1)
       expect(onBackgroundRefreshError).toHaveBeenCalledWith(data.key, error)
     })
