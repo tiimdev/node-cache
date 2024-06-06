@@ -1,6 +1,6 @@
 {
   "name": "@tiimdev/node-cache",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "Cache module for Node.js build on top of Keyv",
   "type": "module",
   "main": "dist/cjs/index.js",
