@@ -94,6 +94,9 @@ await cache.del('foo')
 
 await cache.get('foo')
 // => null
+
+await cache.wrap('key', () => 'value')
+// => value
 ```
 ### Options
 - **stores**?: Keyv[]
@@ -109,6 +112,7 @@ await cache.get('foo')
 ## Methods
 ### > set
 `set(key, value, [ttl]): Promise<value>`
+
 Sets a key value pair. It is possible to define a ttl (in miliseconds). An error will be throw on any failed
 
 ```ts
@@ -121,6 +125,7 @@ See unit tests in [`test/set.test.ts`](./test/cache.test.ts) for more informatio
 
 ### > get
 `get(key): Promise<value>`
+
 Gets a saved value from the cache. Returns a null if not found or expired. If the value was found it returns the value.
 
 ```ts
@@ -136,6 +141,7 @@ See unit tests in [`test/get.test.ts`](./test/cache.test.ts) for more informatio
 
 ### > del
 `del(key): Promise<true>`
+
 Delete a key, an error will be throw on any failed.
 
 ```ts
@@ -153,6 +159,7 @@ See unit tests in [`test/del.test.ts`](./test/cache.test.ts) for more informatio
 
 ### > clear
 `clear(): Promise<true>`
+
 Flush all data, an error will be throw on any failed.
 
 ```ts
@@ -175,6 +182,7 @@ See unit tests in [`test/clear.test.ts`](./test/cache.test.ts) for more informat
 
 ### > wrap
 `wrap(key, fn: async () => value, [ttl], [refreshThreshold]): Promise<value>`
+
 Wraps a function in cache. The first time the function is run, its results are stored in cache so subsequent calls retrieve from cache instead of calling the function.
 
 If `refreshThreshold` is set and the remaining TTL is less than `refreshThreshold`, the system will update the value asynchronously. In the meantime, the system will return the old value until expiration.
@@ -237,7 +245,9 @@ Fired when the cache has been flushed.
 
 ```ts
 cache.on('clear', (error) => {
-	// ... do something ...
+	if (error) {
+    // ... do something ...
+  }
 })
 ```
 
@@ -246,7 +256,9 @@ Fired when the cache has been refreshed in the background.
 
 ```ts
 cache.on('refresh', ({ key, value, error }) => {
-	// ... do something ...
+	if (error) {
+    // ... do something ...
+  }
 })
 ```
 
