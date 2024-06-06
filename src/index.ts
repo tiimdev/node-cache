@@ -101,8 +101,9 @@ export const createCache = (options?: CreateCacheOptions) => {
       }
 
       const ms = runIfFn(ttl, value) ?? options?.ttl
+      const shouldRefresh = lt(remainingTtl, refreshThreshold ?? options?.refreshThreshold)
 
-      if (lt(remainingTtl, refreshThreshold ?? options?.refreshThreshold)) {
+      if (shouldRefresh) {
         coalesceAsync(`+++${key}`, fnc)
           .then(async (result) => {
             try {
@@ -115,7 +116,9 @@ export const createCache = (options?: CreateCacheOptions) => {
           .catch((error) => {
             eventEmitter.emit('refresh', { key, value, error })
           })
-      } else {
+      }
+
+      if (!shouldRefresh && i > 0) {
         await set(stores.slice(0, i), key, value, ms)
       }
 
