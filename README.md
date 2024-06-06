@@ -210,8 +210,7 @@ await cache.wrap('key', () => 3, 5000, 3000)
 await cache.wrap('error', () => {
   throw new Error('failed')
 })
-// onBackgroundRefreshError will be run.
-// => null
+// => error
 ```
 **NOTES:**
 
