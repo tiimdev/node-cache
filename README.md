@@ -121,7 +121,7 @@ await cache.set('key-1', 'value 1')
 // expires after 5 seconds
 await cache.set('key 2', 'value 2', 5000)
 ```
-See unit tests in [`test/set.test.ts`](./test/cache.test.ts) for more information.
+See unit tests in [`test/set.test.ts`](./test/set.test.ts) for more information.
 
 ### > get
 `get(key): Promise<value>`
@@ -137,7 +137,7 @@ await cache.get('key')
 await cache.get('foo')
 // => null
 ```
-See unit tests in [`test/get.test.ts`](./test/cache.test.ts) for more information.
+See unit tests in [`test/get.test.ts`](./test/get.test.ts) for more information.
 
 ### > del
 `del(key): Promise<true>`
@@ -155,7 +155,7 @@ await cache.del('key')
 await cache.get('key')
 // => null
 ```
-See unit tests in [`test/del.test.ts`](./test/cache.test.ts) for more information.
+See unit tests in [`test/del.test.ts`](./test/del.test.ts) for more information.
 
 ### > clear
 `clear(): Promise<true>`
@@ -178,7 +178,7 @@ await cache.get('key-1')
 await cache.get('key-2')
 // => null
 ```
-See unit tests in [`test/clear.test.ts`](./test/cache.test.ts) for more information.
+See unit tests in [`test/clear.test.ts`](./test/clear.test.ts) for more information.
 
 ### > wrap
 `wrap(key, fn: async () => value, [ttl], [refreshThreshold]): Promise<value>`
@@ -218,7 +218,7 @@ await cache.wrap('error', () => {
 * If the threshold is low and the worker function is slow, the key may expire and you may encounter a racing condition with updating values.
 * If no `ttl` is set for the key, the refresh mechanism will not be triggered.
 
-See unit tests in [`test/wrap.test.ts`](./test/cache.test.ts) for more information.
+See unit tests in [`test/wrap.test.ts`](./test/wrap.test.ts) for more information.
 
 ## Events
 ### > set
@@ -244,7 +244,7 @@ Fired when the cache has been flushed.
 
 ```ts
 cache.on('clear', (error) => {
-	if (error) {
+  if (error) {
     // ... do something ...
   }
 })
@@ -255,13 +255,13 @@ Fired when the cache has been refreshed in the background.
 
 ```ts
 cache.on('refresh', ({ key, value, error }) => {
-	if (error) {
+  if (error) {
     // ... do something ...
   }
 })
 ```
 
-See unit tests in [`test/events.test.ts`](./test/cache.test.ts) for more information.
+See unit tests in [`test/events.test.ts`](./test/events.test.ts) for more information.
 
 ## Contribute
 
