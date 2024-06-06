@@ -58,17 +58,27 @@ import KeyvRedis from '@keyv/redis'
 import KeyvSqlite from '@keyv/sqlite'
 import { createCache } from '@tiimdev/node-cache';
 
+// Memory store by default
+const cache = createCache()
+
+// Single store
+const cache = createCache({
+  stores: [new Keyv()],
+})
+
+// Multiple stores
 const cache = createCache({
   stores: [
-    // Memory store
-    new Keyv(),
-
     // Redis store
     new KeyvRedis('redis://user:pass@localhost:6379'),
 
     // Sqlite store
     new KeyvSqlite('cache.db'),
   ],
+})
+
+// With default ttl and refreshThreshold
+const cache = createCache({
   ttl: 10000,
   refreshThreshold: 3000,
 })
@@ -86,13 +96,13 @@ await cache.get('foo')
 // => null
 ```
 ### Options
-- **stores**: Keyv[] (required)
+- **stores**?: Keyv[]
 
     List of Keyv instance. Please refer to the [Keyv document](https://keyv.org/docs/#3.-create-a-new-keyv-instance) for more information.
-- **ttl**: number (optional)
+- **ttl**?: number - Default time to live in milliseconds.
 
     The time to live in milliseconds. This is the maximum amount of time that an item can be in the cache before it is removed.
-- **refreshThreshold**: number (optional)
+- **refreshThreshold**?: number - Default refreshThreshold in milliseconds.
 
     If the remaining TTL is less than **refreshThreshold**, the system will update the value asynchronously in background.
 
@@ -102,10 +112,10 @@ await cache.get('foo')
 Sets a key value pair. It is possible to define a ttl (in miliseconds). An error will be throw on any failed
 
 ```ts
-await cache.set('key-1', 'value 1');
+await cache.set('key-1', 'value 1')
 
 // expires after 5 seconds
-await cache.set('key 2', 'value 2', 5000);
+await cache.set('key 2', 'value 2', 5000)
 ```
 See unit tests in [`test/set.test.ts`](./test/cache.test.ts) for more information.
 
@@ -114,12 +124,12 @@ See unit tests in [`test/set.test.ts`](./test/cache.test.ts) for more informatio
 Gets a saved value from the cache. Returns a null if not found or expired. If the value was found it returns the value.
 
 ```ts
-await cache.set('key', 'value');
+await cache.set('key', 'value')
 
-await cache.get('key');
+await cache.get('key')
 // => value
 
-await cache.get('foo');
+await cache.get('foo')
 // => null
 ```
 See unit tests in [`test/get.test.ts`](./test/cache.test.ts) for more information.
@@ -129,14 +139,14 @@ See unit tests in [`test/get.test.ts`](./test/cache.test.ts) for more informatio
 Delete a key, an error will be throw on any failed.
 
 ```ts
-await cache.set('key', 'value');
+await cache.set('key', 'value')
 
-await cache.get('key');
+await cache.get('key')
 // => value
 
-await cache.del('key');
+await cache.del('key')
 
-await cache.get('key');
+await cache.get('key')
 // => null
 ```
 See unit tests in [`test/del.test.ts`](./test/cache.test.ts) for more information.
@@ -146,19 +156,19 @@ See unit tests in [`test/del.test.ts`](./test/cache.test.ts) for more informatio
 Flush all data, an error will be throw on any failed.
 
 ```ts
-await cache.set('key-1', 'value 1');
-await cache.set('key-2', 'value 2');
+await cache.set('key-1', 'value 1')
+await cache.set('key-2', 'value 2')
 
-await cache.get('key-1');
+await cache.get('key-1')
 // => value 1
-await cache.get('key-2');
+await cache.get('key-2')
 // => value 2
 
-await cache.clear();
+await cache.clear()
 
-await cache.get('key-1');
+await cache.get('key-1')
 // => null
-await cache.get('key-2');
+await cache.get('key-2')
 // => null
 ```
 See unit tests in [`test/clear.test.ts`](./test/cache.test.ts) for more information.
