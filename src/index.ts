@@ -34,7 +34,7 @@ export const createCache = (options?: CreateCacheOptions) => {
     return null
   }
 
-  const set = async <T>(key: string, value: T, ttl?: number) => {
+  const set = async <T>(stores: Keyv[], key: string, value: T, ttl?: number) => {
     try {
       await Promise.all(stores.map(async (store) => store.set(key, value, ttl ?? options?.ttl)))
       eventEmitter.emit('set', { key, value })
@@ -96,19 +96,17 @@ export const createCache = (options?: CreateCacheOptions) => {
 
       if (value === undefined) {
         const result = await fnc()
-        await set(key, result, runIfFn(ttl, result) ?? options?.ttl)
+        await set(stores, key, result, runIfFn(ttl, result) ?? options?.ttl)
         return result
       }
 
       const ms = runIfFn(ttl, value) ?? options?.ttl
 
-      await Promise.all(stores.slice(0, i).map(async (cache) => cache.set(key, value, ms)))
-
       if (lt(remainingTtl, refreshThreshold ?? options?.refreshThreshold)) {
         coalesceAsync(`+++${key}`, fnc)
           .then(async (result) => {
             try {
-              await stores[i].set(key, result, ms)
+              await set(stores.slice(0, i + 1), key, result, ms)
               eventEmitter.emit('refresh', { key, value: result })
             } catch (error) {
               eventEmitter.emit('refresh', { key, value, error })
@@ -117,6 +115,8 @@ export const createCache = (options?: CreateCacheOptions) => {
           .catch((error) => {
             eventEmitter.emit('refresh', { key, value, error })
           })
+      } else {
+        await set(stores.slice(0, i), key, value, ms)
       }
 
       return value
@@ -129,7 +129,7 @@ export const createCache = (options?: CreateCacheOptions) => {
 
   return {
     get,
-    set,
+    set: async <T>(key: string, value: T, ttl?: number) => set(stores, key, value, ttl),
     del,
     clear,
     wrap,
