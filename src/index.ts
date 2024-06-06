@@ -1,3 +1,4 @@
+import EventEmitter from 'events'
 import type Keyv from 'keyv'
 import { coalesceAsync } from './coalesce-async'
 import { runIfFn } from './run-if-fn'
@@ -7,13 +8,21 @@ export interface CreateCacheOptions {
   stores: Keyv[]
   ttl?: number
   refreshThreshold?: number
-  onBackgroundRefreshError?: (key: string, error: unknown) => void
+}
+
+export type Events = {
+  set: <T>(data: { key: string; value: T; error?: unknown }) => void
+  del: (data: { key: string; error?: unknown }) => void
+  clear: (error?: unknown) => void
+  refresh: <T>(data: { key: string; value: T; error?: unknown }) => void
 }
 
 export const createCache = (options: CreateCacheOptions) => {
   const config = { ...options }
 
   if (!config.stores.length) throw new Error('At least one store is required')
+
+  const eventEmitter = new EventEmitter()
 
   const get = async <T>(key: string) => {
     for (const store of config.stores) {
@@ -28,16 +37,37 @@ export const createCache = (options: CreateCacheOptions) => {
     return null
   }
 
-  const set = async <T>(key: string, data: T, ttl?: number) => {
-    await Promise.all(config.stores.map(async (store) => store.set(key, data, ttl ?? config.ttl)))
+  const set = async <T>(key: string, value: T, ttl?: number) => {
+    try {
+      await Promise.all(config.stores.map(async (store) => store.set(key, value, ttl ?? config.ttl)))
+      eventEmitter.emit('set', { key, value })
+      return value
+    } catch (error) {
+      eventEmitter.emit('set', { key, value, error })
+      return Promise.reject(error)
+    }
   }
 
   const del = async (key: string) => {
-    await Promise.all(config.stores.map(async (store) => store.delete(key)))
+    try {
+      await Promise.all(config.stores.map(async (store) => store.delete(key)))
+      eventEmitter.emit('del', { key })
+      return true
+    } catch (error) {
+      eventEmitter.emit('del', { key, error })
+      return Promise.reject(error)
+    }
   }
 
   const clear = async () => {
-    await Promise.all(config.stores.map(async (store) => store.clear()))
+    try {
+      await Promise.all(config.stores.map(async (store) => store.clear()))
+      eventEmitter.emit('clear')
+      return true
+    } catch (error) {
+      eventEmitter.emit('clear', error)
+      return Promise.reject(error)
+    }
   }
 
   const wrap = async <T>(
@@ -79,9 +109,16 @@ export const createCache = (options: CreateCacheOptions) => {
 
       if (lt(remainingTtl, refreshThreshold ?? config.refreshThreshold)) {
         coalesceAsync(`+++${key}`, fnc)
-          .then(async (result) => config.stores[i].set(key, result, ms))
+          .then(async (result) => {
+            try {
+              await config.stores[i].set(key, result, ms)
+              eventEmitter.emit('refresh', { key, value: result })
+            } catch (error) {
+              eventEmitter.emit('refresh', { key, value, error })
+            }
+          })
           .catch((error) => {
-            config.onBackgroundRefreshError?.(key, error)
+            eventEmitter.emit('refresh', { key, value, error })
           })
       }
 
@@ -89,12 +126,17 @@ export const createCache = (options: CreateCacheOptions) => {
     })
   }
 
+  const on = <E extends keyof Events>(event: E, listener: Events[E]) => eventEmitter.addListener(event, listener)
+
+  const off = <E extends keyof Events>(event: E, listener: Events[E]) => eventEmitter.removeListener(event, listener)
+
   return {
     get,
     set,
     del,
     clear,
     wrap,
-    config,
+    on,
+    off,
   }
 }

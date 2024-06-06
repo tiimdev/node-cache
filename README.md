@@ -1,14 +1,13 @@
 ![Logo](./logo.png)
 
-# @tiimdev/node-cache
 [![test](https://github.com/tiimdev/node-cache/actions/workflows/ci.yml/badge.svg)](https://github.com/tiimdev/node-cache/actions/workflows/ci.yml)
 [![license](https://img.shields.io/github/license/tiimdev/node-cache)](https://github.com/tiimdev/node-cache/blob/main/LICENSE)
 [![npm](https://img.shields.io/npm/dm/@tiimdev/node-cache)](https://npmjs.com/package/@tiimdev/node-cache)
 ![npm](https://img.shields.io/npm/v/@tiimdev/node-cache)
 
 # Simple and fast NodeJS caching module.
-A cache module for NodeJS that allows easy wrapping of functions in cache, tiered caches, and a consistent interface.
 Folk and modify from [cache-manager](https://github.com/jaredwray/cache-manager).
+A cache module for NodeJS that allows easy wrapping of functions in cache, tiered caches, and a consistent interface.
 - Made with Typescript and compatible with [ESModules](https://nodejs.org/docs/latest-v14.x/api/esm.html).
 - Easy way to wrap any function in cache, supports a mechanism to refresh expiring cache keys in background.
 - Tiered caches -- data gets stored in each cache and fetched from the highest priority cache(s) first.
@@ -17,7 +16,18 @@ Folk and modify from [cache-manager](https://github.com/jaredwray/cache-manager)
 
 ## Table of Contents
 * [Installation](#installation)
-* [Usage Examples](#usage-examples)
+* [Quick start](#quick-start)
+* [Methods](#methods)
+  * [> set](#-set)
+  * [> get](#-get)
+  * [> del](#-del)
+  * [> clear](#-clear)
+  * [> wrap](#-wrap)
+* [Events](#events)
+  * [> set](#-set)
+  * [> del](#-del)
+  * [> clear](#-clear)
+  * [> refresh](#-refresh)
 * [Contribute](#contribute)
 * [License](#license)
 
@@ -41,9 +51,7 @@ yarn add @keyv/etcd
 
 Please read [Keyv document](https://keyv.org/docs/) for more information.
 
-## Usage Examples
-
-### Initialize
+## Quick start
 ```typescript
 import Keyv from 'keyv'
 import KeyvRedis from '@keyv/redis'
@@ -63,12 +71,21 @@ const cache = createCache({
   ],
   ttl: 10000,
   refreshThreshold: 3000,
-  onBackgroundRefreshError: (key, error) => {
-    /* log or otherwise handle error */
-  },
 })
+
+await cache.set('foo', 'bar')
+// => bar
+
+await cache.get('foo')
+// => bar
+
+await cache.del('foo')
+// => true
+
+await cache.get('foo')
+// => null
 ```
-#### Options
+### Options
 - **stores**: Keyv[] (required)
 
     List of Keyv instance. Please refer to the [Keyv document](https://keyv.org/docs/#3.-create-a-new-keyv-instance) for more information.
@@ -78,11 +95,10 @@ const cache = createCache({
 - **refreshThreshold**: number (optional)
 
     If the remaining TTL is less than **refreshThreshold**, the system will update the value asynchronously in background.
-- **onBackgroundRefreshError**: (key: string, error: unknow) => void (optional)
 
-    A function to handle errors that occur during background refresh.
-
-### > set(key, value, [ttl])
+## Methods
+### > set
+`set(key, value, [ttl]): Promise<value>`
 Sets a key value pair. It is possible to define a ttl (in miliseconds). An error will be throw on any failed
 
 ```ts
@@ -91,8 +107,10 @@ await cache.set('key-1', 'value 1');
 // expires after 5 seconds
 await cache.set('key 2', 'value 2', 5000);
 ```
+See unit tests in [`test/set.test.ts`](./test/cache.test.ts) for more information.
 
-### > get(key)
+### > get
+`get(key): Promise<value>`
 Gets a saved value from the cache. Returns a null if not found or expired. If the value was found it returns the value.
 
 ```ts
@@ -104,8 +122,10 @@ await cache.get('key');
 await cache.get('foo');
 // => null
 ```
+See unit tests in [`test/get.test.ts`](./test/cache.test.ts) for more information.
 
-### > del(key)
+### > del
+`del(key): Promise<true>`
 Delete a key, an error will be throw on any failed.
 
 ```ts
@@ -119,8 +139,32 @@ await cache.del('key');
 await cache.get('key');
 // => null
 ```
+See unit tests in [`test/del.test.ts`](./test/cache.test.ts) for more information.
 
-### > wrap(key, fn: async () => value, [ttl], [refreshThreshold])
+### > clear
+`clear(): Promise<true>`
+Flush all data, an error will be throw on any failed.
+
+```ts
+await cache.set('key-1', 'value 1');
+await cache.set('key-2', 'value 2');
+
+await cache.get('key-1');
+// => value 1
+await cache.get('key-2');
+// => value 2
+
+await cache.clear();
+
+await cache.get('key-1');
+// => null
+await cache.get('key-2');
+// => null
+```
+See unit tests in [`test/clear.test.ts`](./test/cache.test.ts) for more information.
+
+### > wrap
+`wrap(key, fn: async () => value, [ttl], [refreshThreshold]): Promise<value>`
 Wraps a function in cache. The first time the function is run, its results are stored in cache so subsequent calls retrieve from cache instead of calling the function.
 
 If `refreshThreshold` is set and the remaining TTL is less than `refreshThreshold`, the system will update the value asynchronously. In the meantime, the system will return the old value until expiration.
@@ -157,7 +201,46 @@ await cache.wrap('error', () => {
 * If the threshold is low and the worker function is slow, the key may expire and you may encounter a racing condition with updating values.
 * If no `ttl` is set for the key, the refresh mechanism will not be triggered.
 
-See unit tests in [`test/cache.test.ts`](./test/cache.test.ts) for more information.
+See unit tests in [`test/wrap.test.ts`](./test/cache.test.ts) for more information.
+
+## Events
+### > set
+Fired when a key has been added or changed.
+
+```ts
+cache.on('set', ({ key, value, error }) => {
+	// ... do something ...
+})
+```
+
+### > del
+Fired when a key has been removed manually.
+
+```ts
+cache.on('del', ({ key, error }) => {
+	// ... do something ...
+})
+```
+
+### > clear
+Fired when the cache has been flushed.
+
+```ts
+cache.on('clear', (error) => {
+	// ... do something ...
+})
+```
+
+### > refresh
+Fired when the cache has been refreshed in the background.
+
+```ts
+cache.on('refresh', ({ key, value, error }) => {
+	// ... do something ...
+})
+```
+
+See unit tests in [`test/events.test.ts`](./test/cache.test.ts) for more information.
 
 ## Contribute
 
