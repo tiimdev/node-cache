@@ -18,16 +18,16 @@ A cache module for NodeJS that allows easy wrapping of functions in cache, tiere
 * [Installation](#installation)
 * [Quick start](#quick-start)
 * [Methods](#methods)
-  * [> set](#-set)
-  * [> get](#-get)
-  * [> del](#-del)
-  * [> clear](#-clear)
-  * [> wrap](#-wrap)
+  * [> set](#set)
+  * [> get](#get)
+  * [> del](#del)
+  * [> clear](#clear)
+  * [> wrap](#wrap)
 * [Events](#events)
-  * [> set](#-set)
-  * [> del](#-del)
-  * [> clear](#-clear)
-  * [> refresh](#-refresh)
+  * [> set](#set)
+  * [> del](#del)
+  * [> clear](#clear)
+  * [> refresh](#refresh)
 * [Contribute](#contribute)
 * [License](#license)
 
@@ -70,10 +70,14 @@ const cache = createCache({
 const cache = createCache({
   stores: [
     // Redis store
-    new KeyvRedis('redis://user:pass@localhost:6379'),
+    new Keyv({
+      store: new KeyvRedis('redis://user:pass@localhost:6379'),
+    }),
 
     // Sqlite store
-    new KeyvSqlite('cache.db'),
+    new Keyv({
+      store: new KeyvSqlite('cache.db'),
+    }),
   ],
 })
 
@@ -110,7 +114,7 @@ await cache.wrap('key', () => 'value')
     If the remaining TTL is less than **refreshThreshold**, the system will update the value asynchronously in background.
 
 ## Methods
-### > set
+### set
 `set(key, value, [ttl]): Promise<value>`
 
 Sets a key value pair. It is possible to define a ttl (in miliseconds). An error will be throw on any failed
@@ -123,7 +127,7 @@ await cache.set('key 2', 'value 2', 5000)
 ```
 See unit tests in [`test/set.test.ts`](./test/set.test.ts) for more information.
 
-### > get
+### get
 `get(key): Promise<value>`
 
 Gets a saved value from the cache. Returns a null if not found or expired. If the value was found it returns the value.
@@ -139,7 +143,7 @@ await cache.get('foo')
 ```
 See unit tests in [`test/get.test.ts`](./test/get.test.ts) for more information.
 
-### > del
+### del
 `del(key): Promise<true>`
 
 Delete a key, an error will be throw on any failed.
@@ -157,7 +161,7 @@ await cache.get('key')
 ```
 See unit tests in [`test/del.test.ts`](./test/del.test.ts) for more information.
 
-### > clear
+### clear
 `clear(): Promise<true>`
 
 Flush all data, an error will be throw on any failed.
@@ -180,7 +184,7 @@ await cache.get('key-2')
 ```
 See unit tests in [`test/clear.test.ts`](./test/clear.test.ts) for more information.
 
-### > wrap
+### wrap
 `wrap(key, fn: async () => value, [ttl], [refreshThreshold]): Promise<value>`
 
 Wraps a function in cache. The first time the function is run, its results are stored in cache so subsequent calls retrieve from cache instead of calling the function.
@@ -221,7 +225,7 @@ await cache.wrap('error', () => {
 See unit tests in [`test/wrap.test.ts`](./test/wrap.test.ts) for more information.
 
 ## Events
-### > set
+### set
 Fired when a key has been added or changed.
 
 ```ts
@@ -230,7 +234,7 @@ cache.on('set', ({ key, value, error }) => {
 })
 ```
 
-### > del
+### del
 Fired when a key has been removed manually.
 
 ```ts
@@ -239,7 +243,7 @@ cache.on('del', ({ key, error }) => {
 })
 ```
 
-### > clear
+### clear
 Fired when the cache has been flushed.
 
 ```ts
@@ -250,7 +254,7 @@ cache.on('clear', (error) => {
 })
 ```
 
-### > refresh
+### refresh
 Fired when the cache has been refreshed in the background.
 
 ```ts
